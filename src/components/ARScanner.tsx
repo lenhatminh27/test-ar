@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as mobilenet from "@tensorflow-models/mobilenet";
-import { images } from "../data/images"; // import mảng ảnh bạn có sẵn
+import {images} from "../data/images"; // import mảng ảnh bạn có sẵn
 
 interface MatchResult {
     id: number;
@@ -18,19 +18,46 @@ export default function ARScanner() {
 
     // 1️⃣ Load model
     useEffect(() => {
-        mobilenet.load({ version: 2, alpha: 1.0 }).then(setModel);
+        mobilenet.load({version: 2, alpha: 1.0}).then(setModel);
     }, []);
 
     // 2️⃣ Bật camera
     useEffect(() => {
         const initCamera = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: {exact: "environment"}, // 👈 Ưu tiên camera sau
+                    },
+                    audio: false,
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (error) {
+                console.warn("Không mở được camera sau, fallback sang camera trước", error);
+                // fallback nếu thiết bị không có hoặc không cho phép camera sau
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false,
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                }
             }
         };
+
         initCamera();
+
+        return () => {
+            if (videoRef.current?.srcObject) {
+                (videoRef.current.srcObject as MediaStream)
+                    .getTracks()
+                    .forEach((track) => track.stop());
+            }
+        };
     }, []);
+
 
     // 3️⃣ Hàm chuẩn hóa vector
     const normalizeVector = (vec: number[]) => {
@@ -73,7 +100,7 @@ export default function ARScanner() {
         for (const img of images) {
             const sim = cosineSimilarity(normalized, img.vector);
             if (!bestMatch || sim > bestMatch.similarity) {
-                bestMatch = { id: img.id, name: img.name, similarity: sim, videoUrl: img.videoUrl };
+                bestMatch = {id: img.id, name: img.name, similarity: sim, videoUrl: img.videoUrl};
             }
         }
 
