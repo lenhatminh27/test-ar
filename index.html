@@ -13,24 +13,84 @@
 <!--</html>-->
 
 
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>MindAR Video Demo</title>
+
+    <!-- A-Frame & MindAR -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        video {
+            display: none;
+        }
+
+        /* ẩn video thật */
+    </style>
 </head>
 <body>
-<a-scene mindar-image="imageTargetSrc: https://utifkgtstdfomonrwslk.supabase.co/storage/v1/object/public/sacviet/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-  <a-assets>
-    <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
-    <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
-  </a-assets>
+<!-- MindAR Scene -->
+<a-scene
+        color-space="sRGB"
+        device-orientation-permission-ui="enabled: false"
+        embedded
+        mindar-image="imageTargetSrc: https://utifkgtstdfomonrwslk.supabase.co/storage/v1/object/public/sacviet/targets.mind;"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+>
+    <!-- Camera -->
+    <a-camera look-controls="enabled: false" position="0 0 0"></a-camera>
 
-  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-  <a-entity mindar-image-target="targetIndex: 0">
-    <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-    <a-gltf-model rotation="0 0 0 " position="0 0 0.1" scale="0.005 0.005 0.005" src="#avatarModel" animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
-  </a-entity>
+    <!-- Khi marker được nhận -->
+    <a-entity mindar-image-target="targetIndex: 0">
+        <!-- Video plane (hiển thị video trên marker) -->
+        <a-video
+                height="0.5625"
+                id="markerVideo"
+                position="0 0 0"
+                rotation="0 0 0"
+                src="#videoSource"
+                width="1"
+        ></a-video>
+    </a-entity>
 </a-scene>
+
+<!-- Video gốc (ẩn, autoplay để tránh bị block) -->
+<video
+        autoplay
+        crossorigin="anonymous"
+        id="videoSource"
+        loop
+        muted
+        playsinline
+        src="http://34.92.81.76:9000/resources/1.mp4"
+></video>
+
+<!-- Optional: bắt sự kiện marker -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const video = document.querySelector("#videoSource");
+        const target = document.querySelector("[mindar-image-target]");
+
+        target.addEventListener("targetFound", () => {
+            console.log("Marker detected ✅");
+            video.play();
+        });
+
+        target.addEventListener("targetLost", () => {
+            console.log("Marker lost ❌");
+            video.pause();
+        });
+    });
+</script>
 </body>
 </html>
